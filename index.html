@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JAPAN-monitor</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+  <link rel="stylesheet" href="./style.css">
+
+  <script
+    defer
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  ></script>
+  <script defer src="./app.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <header class="toolbar">
+      <div class="brand">
+        JAPAN<span>-monitor</span>
+      </div>
+
+      <span class="connection" id="connection-status" role="status">● 接続中…</span>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar">
+        <div id="information-panel"></div>
+
+        <section id="recent-section" class="recent-section">
+          <div class="section-heading">直近の入電情報</div>
+          <div id="recent-list"></div>
+
+          <button
+            type="button"
+            id="history-button"
+            class="history-button"
+          >
+            過去の地震 <span>›</span>
+          </button>
+        </section>
+      </aside>
+
+      <section class="map-area" aria-label="地図">
+        <div id="map"></div>
+
+        <div id="startup-logo" class="startup-logo" aria-hidden="true" hidden>
+          <svg class="startup-logo-icon" viewBox="0 0 96 96" focusable="false">
+            <circle cx="48" cy="48" r="41" fill="#f5f9fc" stroke="#d9e4ed" stroke-width="2"></circle>
+            <path d="M48 11a37 37 0 0 1 32 18" fill="none" stroke="#136bc0" stroke-width="3" stroke-linecap="round"></path>
+            <path d="M80 67A37 37 0 0 1 48 85" fill="none" stroke="#136bc0" stroke-width="3" stroke-linecap="round"></path>
+            <path d="M15 57c8-1 10-18 17-18 6 0 8 20 14 20 5 0 8-30 14-30 5 0 8 25 14 25 3 0 5-5 8-8" fill="none" stroke="#173b5b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+            <circle cx="48" cy="48" r="5" fill="#e53b32" stroke="#fff" stroke-width="2"></circle>
+          </svg>
+          <div class="startup-logo-wordmark">JAPAN<span>-monitor</span></div>
+          <div class="startup-logo-caption">EARTHQUAKE &amp; TSUNAMI</div>
+        </div>
+
+        <div class="map-top">
+          <time id="clock" class="clock"></time>
+          <span class="sample-badge" id="data-source-badge">情報取得中…</span>
+        </div>
+
+        <div id="map-caption" class="map-caption"></div>
+        <div id="map-legend" class="map-legend"></div>
+
+        <div id="map-error" class="map-error" hidden>
+          地図を読み込めませんでした。
+          インターネット接続を確認して再読み込みしてください。
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-tabs" aria-label="画面切り替え">
+      <button
+        type="button"
+        class="tab active"
+        data-tab="earthquake"
+        aria-current="page"
+      >
+        <svg viewBox="0 0 48 32" aria-hidden="true">
+          <path d="M1 17h10l5-13 8 25 7-20 5 8h11"></path>
+        </svg>
+        <span>地震</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab"
+        data-tab="tsunami"
+      >
+        <svg viewBox="0 0 48 32" aria-hidden="true">
+          <path d="M2 12c7-12 15 12 22 0S39 0 46 12"></path>
+          <path d="M2 24c7-12 15 12 22 0s15-12 22 0"></path>
+        </svg>
+        <span>津波</span>
+      </button>
+    </nav>
+  </div>
+
+  <dialog id="history-dialog">
+    <div class="dialog-header">
+      <h2>過去の地震</h2>
+      <button type="button" id="history-close">閉じる</button>
+    </div>
+    <p class="dialog-note">P2P地震情報 API 経由で取得した気象庁の地震情報です。</p>
+    <div id="history-list"></div>
+  </dialog>
+</body>
+</html>
