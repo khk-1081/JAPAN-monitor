@@ -1743,19 +1743,10 @@ function addRecentIncomingInformation(data) {
   renderRecentInformation();
 }
 
-function telegramFactHTML(label, value) {
-  return `
-    <div class="telegram-fact">
-      <span>${escapeHTML(label)}</span>
-      <strong>${escapeHTML(value)}</strong>
-    </div>
-  `;
-}
-
 function telegramIntensityGroupsHTML(data) {
   const points = Array.isArray(data.points) ? data.points : [];
-  const areaPoints = points.filter((point) => point.isArea);
-  const displayPoints = areaPoints.length ? areaPoints : points;
+  const stationPoints = points.filter((point) => !point.isArea);
+  const displayPoints = stationPoints.length ? stationPoints : points;
   const groups = new Map();
 
   displayPoints.forEach((point) => {
@@ -1776,39 +1767,90 @@ function telegramIntensityGroupsHTML(data) {
     `).join("");
 }
 
+function maximumIntensityPrefectures(data, maximum) {
+  const points = Array.isArray(data.points) ? data.points : [];
+  const stationPoints = points.filter((point) => !point.isArea);
+  const displayPoints = stationPoints.length ? stationPoints : points;
+  const prefectures = new Set();
+
+  displayPoints.forEach((point) => {
+    if (jmaScaleToIntensity(point.scale) !== maximum) return;
+    const prefecture = normalizeJmaName(point.pref);
+    if (prefecture) prefectures.add(prefecture);
+  });
+
+  return [...prefectures];
+}
+
+function tsunamiSentence(tsunami) {
+  const sentences = {
+    "心配なし": "この地震による津波の心配はありません。",
+    "若干の海面変動": "若干の海面変動が予想されますが、被害の心配はありません。",
+    "調査中": "この地震による津波の有無を調査しています。",
+    "津波注意報": "この地震について、津波注意報が発表されています。",
+    "津波警報": "この地震について、津波警報が発表されています。",
+    "不明": "この地震による津波の有無は不明です。"
+  };
+  return sentences[tsunami] || "";
+}
+
 function earthquakeTelegramBodyHTML(data) {
   const earthquake = normalizeP2PQuake(data);
-  const facts = [];
+  const hasHypocenter = earthquake.location !== "震源情報なし";
+  const maximumPrefectures = maximumIntensityPrefectures(
+    data,
+    earthquake.maximum
+  );
+  const maximumPlace = maximumPrefectures.length
+    ? maximumPrefectures.map(escapeHTML).join("・")
+    : "各地";
+  const hypocenterDetails = [];
 
-  if (earthquake.location !== "震源情報なし") {
-    facts.push(telegramFactHTML("震源地", earthquake.location));
-  }
-  if (earthquake.magnitude !== "不明") {
-    facts.push(telegramFactHTML("マグニチュード", earthquake.magnitude));
+  if (hasHypocenter) {
+    hypocenterDetails.push(
+      `震源地は<strong>${escapeHTML(earthquake.location)}</strong>`
+    );
   }
   if (earthquake.depth !== "不明") {
-    facts.push(telegramFactHTML("深さ", `${earthquake.depth} km`));
+    hypocenterDetails.push(
+      `震源の深さは<strong>${escapeHTML(`${earthquake.depth} km`)}</strong>`
+    );
   }
-  if (earthquake.maximum !== "不明") {
-    facts.push(telegramFactHTML("最大震度", earthquake.maximum));
-  }
-  if (earthquake.tsunami !== "情報なし") {
-    facts.push(telegramFactHTML("津波", earthquake.tsunami));
+  if (earthquake.magnitude !== "不明") {
+    hypocenterDetails.push(
+      `地震の規模を示すマグニチュードは<strong>${escapeHTML(earthquake.magnitude)}</strong>`
+    );
   }
 
-  const lead = earthquake.location !== "震源情報なし"
-    ? `${earthquake.date || "発生時刻不明"}ごろ、${earthquake.location}を震源とする地震がありました。`
+  const lead = hasHypocenter
+    ? `${escapeHTML(earthquake.date || "発生時刻不明")}ごろ、<strong>${escapeHTML(earthquake.location)}</strong>を震源とする地震がありました。`
     : "各地の震度に関する情報が発表されました。";
+  const maximumSentence = earthquake.maximum !== "不明"
+    ? `<p>最大震度<strong>${escapeHTML(earthquake.maximum)}</strong>を<strong>${maximumPlace}</strong>で観測しました。</p>`
+    : "";
+  const tsunamiText = tsunamiSentence(earthquake.tsunami);
+  const tsunamiHTML = tsunamiText
+    ? `<p class="telegram-tsunami">${escapeHTML(tsunamiText).replace(
+        /(心配はありません。|被害の心配はありません。|津波の有無を調査しています。|津波注意報が発表されています。|津波警報が発表されています。|津波の有無は不明です。)/,
+        "<strong>$1</strong>"
+      )}</p>`
+    : "";
   const intensityGroups = telegramIntensityGroupsHTML(data);
-  const remarks = earthquake.remarks
-    ? `<section class="telegram-remarks"><h2>備考</h2><p>${escapeHTML(earthquake.remarks)}</p></section>`
+  const intensityLead = intensityGroups && earthquake.maximum !== "不明"
+    ? `<p class="telegram-intensity-lead">震度${escapeHTML(earthquake.maximum)}${earthquake.maximum === "1" ? "" : "以下"}を観測したのは以下の地域です。</p>`
+    : "";
+  const remarks = earthquake.remarks && !tsunamiText.includes(earthquake.remarks)
+    ? `<p class="telegram-note">${escapeHTML(earthquake.remarks)}</p>`
     : "";
 
   return {
     earthquake,
     html: `
-      <p class="telegram-lead">${escapeHTML(lead)}</p>
-      <div class="telegram-facts">${facts.join("")}</div>
+      <p class="telegram-lead">${lead}</p>
+      ${hypocenterDetails.length ? `<p>${hypocenterDetails.join("。")}。</p>` : ""}
+      ${maximumSentence}
+      ${tsunamiHTML}
+      ${intensityLead}
       ${intensityGroups}
       ${remarks}
     `
@@ -1823,17 +1865,19 @@ function eewTelegramBodyHTML(eew) {
   return `
     <p class="telegram-lead">
       ${escapeHTML(eew.originTime || "発生時刻不明")}ごろ、
-      ${escapeHTML(eew.location || "震央地名不明")}で地震が発生しました。
+      <strong>${escapeHTML(eew.location || "震央地名不明")}</strong>で地震が発生しました。
     </p>
-    <div class="telegram-facts">
-      ${telegramFactHTML("情報区分", eew.isWarn ? "警報" : "予報")}
-      ${telegramFactHTML("報数", `第${eew.serial || "?"}報${eew.isFinal ? "（最終報）" : ""}`)}
-      ${telegramFactHTML("推定最大震度", eew.maximum || "不明")}
-      ${telegramFactHTML("マグニチュード", formatMagnitude(eew.magnitude))}
-      ${telegramFactHTML("深さ", eew.depth === "不明" ? "不明" : `${eew.depth} km`)}
-    </div>
-    <section class="telegram-remarks">
-      <h2>対象地域</h2>
+    <p>
+      緊急地震速報（${eew.isWarn ? "警報" : "予報"}）の
+      <strong>第${escapeHTML(eew.serial || "?")}報${eew.isFinal ? "（最終報）" : ""}</strong>です。
+    </p>
+    <p>
+      推定最大震度は<strong>${escapeHTML(eew.maximum || "不明")}</strong>。
+      地震の規模を示すマグニチュードは<strong>${escapeHTML(formatMagnitude(eew.magnitude))}</strong>。
+      震源の深さは<strong>${escapeHTML(eew.depth === "不明" ? "不明" : `${eew.depth} km`)}</strong>です。
+    </p>
+    <p class="telegram-intensity-lead">対象地域は次のとおりです。</p>
+    <section class="telegram-intensity-group">
       <p>${areas.length ? areas.map(escapeHTML).join("・") : "対象地域情報なし"}</p>
     </section>
   `;
