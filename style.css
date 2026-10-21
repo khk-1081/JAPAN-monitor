@@ -123,6 +123,19 @@ button:disabled {
   text-shadow: 0 2px 3px #000;
 }
 
+.panel-title.cancelled {
+  color: #fff;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      #8f1111 0,
+      #8f1111 20px,
+      #2b0909 20px,
+      #2b0909 40px
+    );
+  text-shadow: 0 2px 3px #000;
+}
+
 .panel-title.sensing {
   color: #17232e;
   background: #b6ff00;
@@ -131,6 +144,18 @@ button:disabled {
 .panel-title.tsunami {
   color: #fff;
   background: var(--purple);
+}
+
+.panel-title.typhoon {
+  color: #fff;
+  background: linear-gradient(135deg, #043d73, #087bc1);
+  text-shadow: 0 1px 3px #002443;
+}
+
+.panel-title.volcano {
+  color: #fff;
+  background: linear-gradient(135deg, #411113, #8f1f1f 58%, #e05a22);
+  text-shadow: 0 1px 3px #210000;
 }
 
 .sidebar.warning-mode {
@@ -417,42 +442,39 @@ button:disabled {
 .telegram-body {
   padding: 14px 16px 18px;
   font-size: 14px;
-  line-height: 1.75;
+  line-height: 1.9;
 }
 
 .telegram-lead {
-  margin: 0 0 14px;
+  margin-top: 0;
 }
 
-.telegram-facts {
-  border-top: 1px solid var(--line);
+.telegram-body p {
+  margin: 0 0 18px;
 }
 
-.telegram-fact {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--line);
+.telegram-body strong {
+  font-weight: 800;
 }
 
-.telegram-fact span {
-  color: var(--muted);
+.telegram-tsunami {
+  margin-bottom: 26px !important;
 }
 
-.telegram-fact strong {
-  text-align: right;
+.telegram-intensity-lead {
+  margin-top: 26px !important;
+  margin-bottom: 10px !important;
 }
 
 .telegram-intensity-group,
 .telegram-remarks {
-  margin-top: 15px;
+  margin: 0 0 18px;
 }
 
 .telegram-intensity-group h2,
 .telegram-remarks h2 {
-  margin: 0 0 4px;
-  font-size: 14px;
+  margin: 0 0 6px;
+  font-size: 18px;
 }
 
 .telegram-intensity-group p,
@@ -460,6 +482,31 @@ button:disabled {
   margin: 0;
   overflow-wrap: anywhere;
   white-space: pre-line;
+}
+
+.telegram-note {
+  margin-top: 24px !important;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.cancelled-message {
+  padding: 24px 18px;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.cancelled-message > strong {
+  display: block;
+  margin-bottom: 14px;
+  color: #a31212;
+  font-size: 20px;
+}
+
+.cancelled-message p {
+  margin: 0;
 }
 
 .history-button {
@@ -533,6 +580,571 @@ button:disabled {
   min-height: 0;
   overflow: hidden;
   background: #dce8ee;
+}
+
+.tsunami-map-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 550;
+  display: grid;
+  place-items: center;
+  padding: 30px;
+  background: rgb(90 100 110 / 42%);
+  color: #17232e;
+  text-align: center;
+  font-size: clamp(18px, 2.2vw, 30px);
+  font-weight: 750;
+  text-shadow: 0 1px 3px #fff;
+  pointer-events: none;
+}
+
+.tsunami-area-grade {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.panel-title.tsunami-warning {
+  background: #e53b32;
+}
+
+.panel-title.tsunami-advisory {
+  color: #17232e;
+  background: #ddc700;
+}
+
+.panel-title.tsunami-unknown {
+  background: #637283;
+}
+
+.typhoon-empty-state {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  padding: 28px 20px;
+  color: #536474;
+  text-align: center;
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.typhoon-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  gap: 7px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: #edf3f8;
+}
+
+.typhoon-selector button {
+  min-width: 0;
+  padding: 8px 7px;
+  border: 1px solid #b7c5d2;
+  border-radius: 5px;
+  background: #fff;
+  color: #344657;
+  text-align: left;
+}
+
+.typhoon-selector button.active {
+  color: #fff;
+  border-color: #075da9;
+  background: #075da9;
+}
+
+.typhoon-selector strong,
+.typhoon-selector span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.typhoon-selector strong {
+  font-size: 13px;
+}
+
+.typhoon-selector span {
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.typhoon-error {
+  color: #803a00;
+  background: #fff1dc;
+}
+
+.typhoon-detail {
+  padding-bottom: 10px;
+}
+
+.typhoon-location-box {
+  margin-bottom: 10px;
+  border-color: #087bc1;
+  background: #f4faff;
+}
+
+.typhoon-location-box time {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.typhoon-status-line {
+  margin-bottom: 8px;
+  padding: 9px 10px;
+  border-left: 5px solid #087bc1;
+  background: #e6f4ff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.detail-row .value.typhoon-course {
+  font-size: 18px;
+}
+
+.typhoon-wind-areas {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+}
+
+.typhoon-wind-areas > div {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+  line-height: 1.5;
+}
+
+.typhoon-wind-areas > div:last-child {
+  border-bottom: 0;
+}
+
+.typhoon-wind-areas span,
+.typhoon-wind-areas strong {
+  display: block;
+}
+
+.typhoon-wind-areas span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.typhoon-wind-areas strong {
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.typhoon-forecast-section {
+  padding: 0 16px 18px;
+}
+
+.typhoon-forecast-section h2 {
+  margin: 0;
+  padding: 10px 0 7px;
+  border-bottom: 2px solid #8da2b5;
+  font-size: 14px;
+}
+
+.typhoon-forecast-list {
+  border-bottom: 1px solid var(--line);
+}
+
+.typhoon-forecast-row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 3px 9px;
+  padding: 9px 2px;
+  border-bottom: 1px solid #e1e7ed;
+}
+
+.typhoon-forecast-row:last-child {
+  border-bottom: 0;
+}
+
+.typhoon-forecast-row time {
+  grid-row: 1 / span 2;
+  color: #075da9;
+  font-size: 12px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.typhoon-forecast-row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.typhoon-forecast-row span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.typhoon-empty {
+  margin: 0;
+  padding: 14px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.volcano-error {
+  color: #7a2500;
+  background: #fff0df;
+}
+
+.volcano-overview-lead {
+  padding: 17px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fff8f3;
+}
+
+.volcano-overview-lead strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 20px;
+}
+
+.volcano-overview-lead p {
+  margin: 0;
+  color: #5a6875;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.volcano-warning-list {
+  padding: 14px 12px 20px;
+}
+
+.volcano-warning-list h2,
+.volcano-section > h2 {
+  margin: 0;
+  padding: 0 4px 9px;
+  border-bottom: 2px solid #8f1f1f;
+  font-size: 14px;
+}
+
+.volcano-warning-list button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 5px;
+  border: 0;
+  border-bottom: 1px solid #e0e5e9;
+  background: #fff;
+  color: #17232e;
+  text-align: left;
+}
+
+.volcano-warning-list button:hover {
+  background: #fff3eb;
+}
+
+.volcano-warning-list button i {
+  color: var(--volcano-color);
+  font-size: 25px;
+  font-style: normal;
+  line-height: 1;
+  text-shadow: 0 0 1px #111, 0 1px 2px #0005;
+}
+
+.volcano-warning-list button span,
+.volcano-warning-list button strong,
+.volcano-warning-list button small {
+  min-width: 0;
+  display: block;
+}
+
+.volcano-warning-list button strong {
+  font-size: 14px;
+}
+
+.volcano-warning-list button small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.volcano-warning-list button b {
+  color: #8f1f1f;
+  font-size: 22px;
+}
+
+.volcano-detail-title {
+  font-size: 25px;
+}
+
+.volcano-section {
+  padding: 15px 14px 5px;
+  border-bottom: 1px solid var(--line);
+}
+
+.volcano-section:last-child {
+  padding-bottom: 22px;
+}
+
+.volcano-current-warning {
+  margin: 11px 0;
+  padding: 12px;
+  border-left: 7px solid #65727f;
+  background: #f0f3f5;
+}
+
+.volcano-current-warning.level-1 {
+  border-left-color: #d0bc00;
+  background: #fffbe3;
+}
+
+.volcano-current-warning.level-2 {
+  border-left-color: #f57c1f;
+  background: #fff0e3;
+}
+
+.volcano-current-warning.level-3 {
+  border-left-color: #e03927;
+  background: #ffebe8;
+}
+
+.volcano-current-warning.level-4 {
+  border-left-color: #c2185b;
+  background: #ffe8f1;
+}
+
+.volcano-current-warning.level-5 {
+  border-left-color: #4d1a4f;
+  background: #f5e8f6;
+}
+
+.volcano-current-warning strong,
+.volcano-current-warning span {
+  display: block;
+}
+
+.volcano-current-warning strong {
+  font-size: 17px;
+}
+
+.volcano-current-warning span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.volcano-info-block {
+  margin: 10px 0;
+  border: 1px solid #d1d9e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.volcano-info-block h3 {
+  margin: 0;
+  padding: 7px 9px;
+  background: #eef2f5;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.volcano-info-item {
+  padding: 8px 9px;
+  border-top: 1px solid #e1e7eb;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.volcano-info-item:first-of-type {
+  border-top: 0;
+}
+
+.volcano-info-item strong,
+.volcano-info-item p {
+  display: block;
+  margin: 0;
+}
+
+.volcano-condition {
+  display: inline-block;
+  margin: 3px 0 0 6px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #e8edf1;
+  color: #4f5d69;
+  font-size: 10px;
+}
+
+.volcano-info-item p {
+  margin-top: 3px;
+  color: #52606c;
+}
+
+.volcano-feed-section {
+  padding-bottom: 14px;
+}
+
+.volcano-empty {
+  margin: 0;
+  padding: 13px 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.volcano-telegram {
+  margin-top: 10px;
+  border: 1px solid #c7d0d8;
+  border-radius: 5px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.volcano-telegram summary {
+  padding: 10px 9px;
+  background: #f3f6f8;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.volcano-telegram summary span,
+.volcano-telegram summary time {
+  display: block;
+}
+
+.volcano-telegram summary span {
+  font-weight: 750;
+}
+
+.volcano-telegram summary time {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.volcano-telegram-body {
+  padding: 10px;
+  border-top: 1px solid #dbe1e6;
+  font-size: 12px;
+  line-height: 1.75;
+}
+
+.volcano-telegram-meta {
+  font-weight: 750;
+}
+
+.volcano-office {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.volcano-headline {
+  margin: 10px 0;
+  padding: 9px;
+  border-left: 4px solid #e05a22;
+  background: #fff6ef;
+  white-space: pre-line;
+}
+
+.volcano-telegram-section {
+  margin-top: 12px;
+}
+
+.volcano-telegram-section h4 {
+  margin: 0 0 5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #b8c2ca;
+  font-size: 12px;
+}
+
+.volcano-telegram-section > p {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.volcano-telegram-item {
+  padding: 6px 0;
+  border-bottom: 1px solid #e5e9ec;
+}
+
+.volcano-telegram-item:last-child {
+  border-bottom: 0;
+}
+
+.volcano-telegram-item time,
+.volcano-telegram-item strong,
+.volcano-telegram-item span,
+.volcano-telegram-item p {
+  display: block;
+  margin: 0;
+}
+
+.volcano-telegram-item time,
+.volcano-telegram-item span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.volcano-observation-list {
+  margin: 0;
+}
+
+.volcano-observation-list > div {
+  padding: 5px 0;
+  border-bottom: 1px solid #e4e8ec;
+}
+
+.volcano-observation-list > div:last-child {
+  border-bottom: 0;
+}
+
+.volcano-observation-list dt {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.volcano-observation-list dd {
+  margin: 1px 0 0;
+  white-space: pre-line;
+}
+
+.volcano-source-link {
+  display: inline-block;
+  margin-top: 13px;
+  color: #075da9;
+  font-weight: 700;
+}
+
+.legend-ring {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+  border: 3px solid;
+  border-radius: 50%;
+  vertical-align: -2px;
+}
+
+.legend-ring.forecast-circle {
+  border-color: #087bc1;
+  background: #2aa7df18;
+}
+
+.legend-ring.storm-area {
+  border-color: #e53935;
+  background: #ef535044;
+}
+
+.legend-ring.gale-area {
+  border-color: #d6ae00;
+  background: #ffe34f55;
 }
 
 #map {
@@ -699,6 +1311,131 @@ button:disabled {
   }
 }
 
+.typhoon-center-icon,
+.typhoon-forecast-icon {
+  overflow: visible !important;
+  border: 0;
+  background: transparent;
+}
+
+.volcano-icon {
+  overflow: visible !important;
+  border: 0;
+  background: transparent;
+}
+
+.volcano-mark {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--volcano-color);
+  font: 900 30px/30px Arial, sans-serif;
+  text-align: center;
+  text-shadow:
+    -1px -1px 0 #fff,
+    1px -1px 0 #fff,
+    -1px 1px 0 #fff,
+    1px 1px 0 #fff,
+    0 2px 4px #0008;
+  cursor: pointer;
+  pointer-events: none;
+  transform-origin: 50% 65%;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.volcano-icon:hover .volcano-mark,
+.volcano-icon:focus .volcano-mark {
+  transform: scale(1.28);
+  filter: saturate(1.2);
+}
+
+.volcano-legend-triangle {
+  display: inline-block;
+  margin-right: 5px;
+  font-size: 16px;
+  font-style: normal;
+  line-height: 10px;
+  text-shadow: 0 0 1px #111;
+  vertical-align: -1px;
+}
+
+.typhoon-center-mark {
+  width: 150px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  filter: drop-shadow(0 2px 3px #001d3455);
+  pointer-events: none;
+}
+
+.typhoon-center-mark svg {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  overflow: visible;
+}
+
+.typhoon-center-mark path {
+  fill: #087bc1;
+  stroke: #fff;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.typhoon-center-mark circle {
+  fill: #fff;
+  stroke: #043d73;
+  stroke-width: 1.5;
+}
+
+.typhoon-center-mark span {
+  padding: 4px 7px;
+  border: 1px solid #075da9;
+  border-radius: 4px;
+  background: #fffffff2;
+  color: #043d73;
+  box-shadow: 0 1px 4px #001d3433;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.typhoon-forecast-mark {
+  position: relative;
+  width: 100px;
+  height: 42px;
+  pointer-events: none;
+}
+
+.typhoon-forecast-mark i {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 14px;
+  height: 14px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #087bc1;
+  box-shadow: 0 0 0 1px #075da9, 0 1px 4px #0004;
+}
+
+.typhoon-forecast-mark span {
+  position: absolute;
+  top: 19px;
+  left: 0;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: #ffffffe8;
+  color: #075da9;
+  box-shadow: 0 1px 3px #0003;
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
 .station-label {
   font-family: inherit;
   font-size: 12px;
@@ -708,7 +1445,7 @@ button:disabled {
 
 .bottom-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-top: 2px solid #8493a2;
   background: #f4f6f8;
 }

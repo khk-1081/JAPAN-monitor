@@ -49,18 +49,6 @@
       <section class="map-area" aria-label="地図">
         <div id="map"></div>
 
-        <div id="startup-logo" class="startup-logo" aria-hidden="true" hidden>
-          <svg class="startup-logo-icon" viewBox="0 0 96 96" focusable="false">
-            <circle cx="48" cy="48" r="41" fill="#f5f9fc" stroke="#d9e4ed" stroke-width="2"></circle>
-            <path d="M48 11a37 37 0 0 1 32 18" fill="none" stroke="#136bc0" stroke-width="3" stroke-linecap="round"></path>
-            <path d="M80 67A37 37 0 0 1 48 85" fill="none" stroke="#136bc0" stroke-width="3" stroke-linecap="round"></path>
-            <path d="M15 57c8-1 10-18 17-18 6 0 8 20 14 20 5 0 8-30 14-30 5 0 8 25 14 25 3 0 5-5 8-8" fill="none" stroke="#173b5b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
-            <circle cx="48" cy="48" r="5" fill="#e53b32" stroke="#fff" stroke-width="2"></circle>
-          </svg>
-          <div class="startup-logo-wordmark">JAPAN<span>-monitor</span></div>
-          <div class="startup-logo-caption">EARTHQUAKE &amp; TSUNAMI</div>
-        </div>
-
         <div class="map-top">
           <time id="clock" class="clock"></time>
           <span class="sample-badge" id="data-source-badge">情報取得中…</span>
@@ -99,6 +87,31 @@
           <path d="M2 24c7-12 15 12 22 0s15-12 22 0"></path>
         </svg>
         <span>津波</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab"
+        data-tab="typhoon"
+      >
+        <svg viewBox="0 0 48 32" aria-hidden="true">
+          <path d="M24 16c-5-7-3-13 3-15 7-2 14 4 12 11-2 7-10 10-15 4Z"></path>
+          <path d="M24 16c5 7 3 13-3 15-7 2-14-4-12-11 2-7 10-10 15-4Z"></path>
+          <circle cx="24" cy="16" r="2"></circle>
+        </svg>
+        <span>台風</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab"
+        data-tab="volcano"
+      >
+        <svg viewBox="0 0 48 32" aria-hidden="true">
+          <path d="M3 29 18 5l6 9 5-7 16 22H3Z"></path>
+          <path d="m14 12 5 3 5-1"></path>
+        </svg>
+        <span>火山</span>
       </button>
     </nav>
   </div>
