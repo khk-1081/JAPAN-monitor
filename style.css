@@ -158,6 +158,12 @@ button:disabled {
   text-shadow: 0 1px 3px #210000;
 }
 
+.panel-title.weather-alert {
+  color: #fff;
+  background: linear-gradient(135deg, #384451, #61506f 55%, #7b356f);
+  text-shadow: 0 1px 3px #1d1020;
+}
+
 .sidebar.warning-mode {
   color: #fff;
   background: #a80707;
@@ -1122,6 +1128,185 @@ button:disabled {
   font-weight: 700;
 }
 
+.weather-warning-updated {
+  padding: 11px 15px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.weather-warning-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  background: #f4f6f8;
+}
+
+.weather-warning-count {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 11px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 8px;
+  border: 1px solid #c9d1d8;
+  border-radius: 5px;
+  background: #fff;
+  font-size: 12px;
+}
+
+.weather-warning-count i,
+.weather-warning-group summary i,
+.weather-warning-area-button i {
+  display: block;
+  width: 11px;
+  height: 11px;
+  border: 1px solid #17232e88;
+  border-radius: 2px;
+  background: var(--warning-color);
+}
+
+.weather-warning-count span {
+  min-width: 0;
+  font-weight: 750;
+}
+
+.weather-warning-count strong {
+  font-size: 18px;
+}
+
+.weather-warning-groups {
+  padding: 11px 12px 20px;
+}
+
+.weather-warning-group {
+  margin-bottom: 8px;
+  border: 1px solid #cbd3da;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.weather-warning-group:last-child {
+  margin-bottom: 0;
+}
+
+.weather-warning-group summary {
+  display: grid;
+  grid-template-columns: 13px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: #eef2f5;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  list-style: none;
+}
+
+.weather-warning-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.weather-warning-group summary::after {
+  content: "＋";
+  grid-column: 3;
+  grid-row: 1;
+  margin-left: 7px;
+  color: #5c6c79;
+  font-size: 15px;
+}
+
+.weather-warning-group[open] summary::after {
+  content: "－";
+}
+
+.weather-warning-group summary strong {
+  grid-column: 3;
+  grid-row: 1;
+  margin-right: 24px;
+  font-size: 12px;
+}
+
+.weather-warning-area-list {
+  border-top: 1px solid #d7dee4;
+}
+
+.weather-warning-area-button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 11px minmax(0, 1fr);
+  gap: 8px;
+  padding: 9px 10px;
+  border: 0;
+  border-bottom: 1px solid #e2e7eb;
+  background: #fff;
+  color: #17232e;
+  text-align: left;
+}
+
+.weather-warning-area-button:last-child {
+  border-bottom: 0;
+}
+
+.weather-warning-area-button:hover,
+.weather-warning-area-button:focus-visible {
+  background: #eef5fb;
+}
+
+.weather-warning-area-button i {
+  margin-top: 3px;
+}
+
+.weather-warning-area-button span,
+.weather-warning-area-button strong,
+.weather-warning-area-button small {
+  min-width: 0;
+  display: block;
+}
+
+.weather-warning-area-button strong {
+  font-size: 13px;
+}
+
+.weather-warning-area-button small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.weather-warning-empty {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  padding: 28px 20px;
+  color: #536474;
+  text-align: center;
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.weather-warning-error {
+  padding: 10px 14px;
+  border-bottom: 1px solid #efc8a7;
+  background: #fff2e6;
+  color: #7a3300;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.weather-warning-tooltip {
+  border: 1px solid #73808c;
+  box-shadow: 0 2px 8px #0003;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
 .legend-ring {
   display: inline-block;
   width: 12px;
@@ -1445,7 +1630,7 @@ button:disabled {
 
 .bottom-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   border-top: 2px solid #8493a2;
   background: #f4f6f8;
 }
@@ -1567,6 +1752,16 @@ dialog::backdrop {
   .panel-title {
     font-size: 24px;
   }
+
+  .tab {
+    gap: 7px;
+    font-size: 16px;
+  }
+
+  .tab svg {
+    width: 32px;
+    height: 25px;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1595,5 +1790,16 @@ dialog::backdrop {
     position: sticky;
     bottom: 0;
     z-index: 1000;
+  }
+
+  .tab {
+    flex-direction: column;
+    gap: 1px;
+    font-size: 11px;
+  }
+
+  .tab svg {
+    width: 27px;
+    height: 22px;
   }
 }

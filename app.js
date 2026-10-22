@@ -984,6 +984,7 @@ let municipalityIntensityLayer = null;
 let tsunamiCoastLayer = null;
 let typhoonLayer = null;
 let volcanoLayer = null;
+let weatherWarningLayer = null;
 let tsunamiOverlaySheet = null;
 let tsunamiLoadInProgress = false;
 let tsunamiRevisionDrawn = -1;
@@ -1031,6 +1032,109 @@ const volcanoState = {
   error: "",
   lastUpdatedAt: 0
 };
+const WEATHER_WARNING_TIME_URL =
+  "https://www.jma.go.jp/bosai/warning/data/r8/map_time.json";
+const WEATHER_WARNING_MAP_URL =
+  "https://www.jma.go.jp/bosai/warning/data/r8/map.json";
+const WEATHER_WARNING_FLOOD_URL =
+  "https://www.jma.go.jp/bosai/flood/data/r8/flood_xml.json";
+const WEATHER_WARNING_AREA_URL =
+  "https://www.jma.go.jp/bosai/common/const/area.json";
+const WEATHER_WARNING_GEOJSON_BASE_URL =
+  "https://www.jma.go.jp/bosai/common/const/geojson";
+const WEATHER_WARNING_LEVELS = {
+  advisory: {
+    rank: 1,
+    level: 20,
+    label: "注意報",
+    color: "#f7e200",
+    textColor: "#17232e"
+  },
+  warning: {
+    rank: 2,
+    level: 30,
+    label: "警報",
+    color: "#e03927",
+    textColor: "#ffffff"
+  },
+  danger: {
+    rank: 3,
+    level: 40,
+    label: "危険警報",
+    color: "#b66dde",
+    textColor: "#17232e"
+  },
+  special: {
+    rank: 4,
+    level: 50,
+    label: "特別警報",
+    color: "#4d1a4f",
+    textColor: "#ffffff"
+  }
+};
+const WEATHER_WARNING_CODES = {
+  "33": ["special", "レベル5大雨特別警報"],
+  "43": ["danger", "レベル4大雨危険警報"],
+  "03": ["warning", "レベル3大雨警報"],
+  "10": ["advisory", "レベル2大雨注意報"],
+  "39": ["special", "レベル5土砂災害特別警報"],
+  "49": ["danger", "レベル4土砂災害危険警報"],
+  "09": ["warning", "レベル3土砂災害警報"],
+  "29": ["advisory", "レベル2土砂災害注意報"],
+  "38": ["special", "レベル5高潮特別警報"],
+  "48": ["danger", "レベル4高潮危険警報"],
+  "08": ["warning", "レベル3高潮警報"],
+  "19": ["advisory", "レベル2高潮注意報"],
+  "35": ["special", "暴風特別警報"],
+  "05": ["warning", "暴風警報"],
+  "15": ["advisory", "強風注意報"],
+  "32": ["special", "暴風雪特別警報"],
+  "02": ["warning", "暴風雪警報"],
+  "13": ["advisory", "風雪注意報"],
+  "36": ["special", "大雪特別警報"],
+  "06": ["warning", "大雪警報"],
+  "12": ["advisory", "大雪注意報"],
+  "37": ["special", "波浪特別警報"],
+  "07": ["warning", "波浪警報"],
+  "16": ["advisory", "波浪注意報"],
+  "14": ["advisory", "雷注意報"],
+  "17": ["advisory", "融雪注意報"],
+  "20": ["advisory", "濃霧注意報"],
+  "21": ["advisory", "乾燥注意報"],
+  "22": ["advisory", "なだれ注意報"],
+  "23": ["advisory", "低温注意報"],
+  "24": ["advisory", "霜注意報"],
+  "25": ["advisory", "着氷注意報"],
+  "26": ["advisory", "着雪注意報"]
+};
+const WEATHER_FLOOD_CODES = {
+  "53": ["special", "レベル5氾濫特別警報"],
+  "51": ["special", "レベル5氾濫特別警報"],
+  "41": ["danger", "レベル4氾濫危険警報"],
+  "40": ["danger", "レベル4氾濫危険警報"],
+  "31": ["warning", "レベル3氾濫警報"],
+  "30": ["warning", "レベル3氾濫警報"],
+  "22": ["advisory", "レベル2氾濫注意報"],
+  "21": ["advisory", "レベル2氾濫注意報"],
+  "20": ["advisory", "レベル2氾濫注意報"]
+};
+const weatherWarningState = {
+  status: "loading",
+  areas: [],
+  updatedAt: 0,
+  revision: "",
+  error: ""
+};
+let weatherWarningLoadInProgress = false;
+let weatherWarningAreaDataPromise = null;
+let weatherWarningMapRecords = null;
+let weatherWarningFloodRecords = [];
+let weatherWarningBoundaryPromise = null;
+let weatherWarningRenderSequence = 0;
+let weatherWarningViewReady = false;
+let weatherWarningRenderer = null;
+const weatherWarningFeaturesByCode = new Map();
+const weatherWarningLeafletLayersByCode = new Map();
 const regionFeaturesByCode = new Map();
 const regionFeatureLoads = new Map();
 const municipalityFeaturesByCode = new Map();
@@ -1883,6 +1987,8 @@ function initializeMap() {
   map.createPane("intensityAreaPane");
   map.getPane("intensityAreaPane").style.zIndex = 340;
   map.getPane("intensityAreaPane").style.pointerEvents = "none";
+  map.createPane("weatherWarningPane");
+  map.getPane("weatherWarningPane").style.zIndex = 350;
   map.createPane("tsunamiCoastPane");
   map.getPane("tsunamiCoastPane").style.zIndex = 450;
 
@@ -1954,6 +2060,11 @@ function initializeMap() {
   tsunamiCoastLayer = L.layerGroup().addTo(map);
   typhoonLayer = L.layerGroup().addTo(map);
   volcanoLayer = L.layerGroup().addTo(map);
+  weatherWarningLayer = L.layerGroup().addTo(map);
+  weatherWarningRenderer = L.canvas({
+    pane: "weatherWarningPane",
+    padding: 0.35
+  });
   map.on("zoomend", () => {
     updateJapanBaseLayer();
     if (isEarthquakeMapActive() && state.selectedEarthquake) {
@@ -1974,6 +2085,8 @@ function initializeMap() {
     '・台風情報：<a href="https://www.jma.go.jp/bosai/map.html#contents=typhoon"' +
     ' target="_blank" rel="noopener">気象庁</a>' +
     '・火山情報：<a href="https://www.jma.go.jp/bosai/map.html#contents=volcano"' +
+    ' target="_blank" rel="noopener">気象庁</a>' +
+    '・気象警報：<a href="https://www.jma.go.jp/bosai/warning/"' +
     ' target="_blank" rel="noopener">気象庁</a>'
   );
 }
@@ -2028,6 +2141,11 @@ function clearMapOverlays() {
   }
   if (volcanoLayer) {
     volcanoLayer.clearLayers();
+  }
+  weatherWarningRenderSequence += 1;
+  weatherWarningLeafletLayersByCode.clear();
+  if (weatherWarningLayer) {
+    weatherWarningLayer.clearLayers();
   }
 }
 
@@ -4258,6 +4376,436 @@ function renderVolcano() {
   renderVolcanoMap(volcano);
 }
 
+function weatherWarningCodeInfo(code, flood = false) {
+  const normalizedCode = String(code || "").padStart(2, "0");
+  const entry = (flood ? WEATHER_FLOOD_CODES : WEATHER_WARNING_CODES)[normalizedCode];
+  if (!entry) return null;
+  return {
+    ...WEATHER_WARNING_LEVELS[entry[0]],
+    code: normalizedCode,
+    severity: entry[0],
+    label: entry[1]
+  };
+}
+
+function isActiveWeatherWarning(kind) {
+  if (!kind?.code) return false;
+  return ![
+    "解除",
+    "発表警報・注意報はなし"
+  ].includes(String(kind.status || ""));
+}
+
+function weatherWarningRegionName(areaCode, areaData) {
+  const class20 = areaData?.class20s?.[areaCode];
+  const class15 = areaData?.class15s?.[class20?.parent];
+  const class10 = areaData?.class10s?.[class15?.parent];
+  const office = areaData?.offices?.[class10?.parent];
+  return office?.name || class10?.name || class15?.name || "";
+}
+
+function buildWeatherWarningAreas(warningRecords, floodRecords, areaData) {
+  const areaMap = new Map();
+  let updatedAt = 0;
+
+  const ensureArea = (areaCode) => {
+    const code = String(areaCode || "");
+    if (!areaMap.has(code)) {
+      areaMap.set(code, {
+        code,
+        name: areaData?.class20s?.[code]?.name || code,
+        region: weatherWarningRegionName(code, areaData),
+        severity: "advisory",
+        rank: 0,
+        warningsByKey: new Map()
+      });
+    }
+    return areaMap.get(code);
+  };
+
+  const addWarning = (areaCode, info, label, sourceKey) => {
+    if (!areaCode || !info) return;
+    const area = ensureArea(areaCode);
+    if (info.rank > area.rank) {
+      area.rank = info.rank;
+      area.severity = info.severity;
+    }
+    const key = `${sourceKey || info.code}:${label}`;
+    if (!area.warningsByKey.has(key)) {
+      area.warningsByKey.set(key, {
+        code: info.code,
+        severity: info.severity,
+        rank: info.rank,
+        label
+      });
+    }
+  };
+
+  (Array.isArray(warningRecords) ? warningRecords : []).forEach((record) => {
+    const reportTime = Date.parse(record?.reportDatetime || "");
+    if (Number.isFinite(reportTime)) updatedAt = Math.max(updatedAt, reportTime);
+    if (record?.infoType === "取消") return;
+
+    (record?.warning?.class20Items || []).forEach((item) => {
+      (item?.kinds || []).forEach((kind) => {
+        if (!isActiveWeatherWarning(kind)) return;
+        const info = weatherWarningCodeInfo(kind.code);
+        if (!info) return;
+        addWarning(item.areaCode, info, info.label, `weather-${info.code}`);
+      });
+    });
+  });
+
+  (Array.isArray(floodRecords) ? floodRecords : []).forEach((record) => {
+    const reportTime = Date.parse(record?.reportDatetime || "");
+    if (Number.isFinite(reportTime)) updatedAt = Math.max(updatedAt, reportTime);
+    if (record?.infoType === "取消") return;
+
+    const info = weatherWarningCodeInfo(record?.item?.code, true);
+    if (!info) return;
+    const riverName = String(record?.riverName || "").trim();
+    const label = riverName ? `${info.label}（${riverName}）` : info.label;
+    (record?.class20Codes || []).forEach((areaCode) => {
+      addWarning(areaCode, info, label, `flood-${record?.riverCode || info.code}`);
+    });
+  });
+
+  const areas = [...areaMap.values()].map((area) => ({
+    code: area.code,
+    name: area.name,
+    region: area.region,
+    severity: area.severity,
+    rank: area.rank,
+    warnings: [...area.warningsByKey.values()].sort((left, right) =>
+      right.rank - left.rank || left.label.localeCompare(right.label, "ja")
+    )
+  })).sort((left, right) =>
+    right.rank - left.rank || left.code.localeCompare(right.code)
+  );
+
+  return { areas, updatedAt };
+}
+
+async function fetchWeatherWarningAreaData() {
+  if (weatherWarningAreaDataPromise) return weatherWarningAreaDataPromise;
+  weatherWarningAreaDataPromise = fetch(WEATHER_WARNING_AREA_URL, {
+    cache: "force-cache"
+  }).then((response) => {
+    if (!response.ok) throw new Error("気象警報の地域一覧を取得できませんでした");
+    return response.json();
+  }).catch((error) => {
+    weatherWarningAreaDataPromise = null;
+    throw error;
+  });
+  return weatherWarningAreaDataPromise;
+}
+
+async function loadLatestWeatherWarnings() {
+  if (weatherWarningLoadInProgress) return;
+  weatherWarningLoadInProgress = true;
+
+  try {
+    const [timeResponse, areaData, floodResult] = await Promise.all([
+      fetch(WEATHER_WARNING_TIME_URL, { cache: "no-store" }).then((response) => {
+        if (!response.ok) throw new Error("気象警報の更新時刻を取得できませんでした");
+        return response.json();
+      }),
+      fetchWeatherWarningAreaData(),
+      fetch(WEATHER_WARNING_FLOOD_URL, { cache: "no-store" })
+        .then((response) => {
+          if (!response.ok) throw new Error("氾濫警報を取得できませんでした");
+          return response.json();
+        })
+        .catch((error) => {
+          console.warn(error.message);
+          return weatherWarningFloodRecords;
+        })
+    ]);
+
+    const revision = String(timeResponse?.latestControlDatetime || "");
+    if (!weatherWarningMapRecords || revision !== weatherWarningState.revision) {
+      const response = await fetch(WEATHER_WARNING_MAP_URL, { cache: "no-store" });
+      if (!response.ok) throw new Error("気象警報を取得できませんでした");
+      const records = await response.json();
+      if (!Array.isArray(records)) throw new Error("気象警報の形式が不正です");
+      weatherWarningMapRecords = records;
+    }
+
+    weatherWarningFloodRecords = Array.isArray(floodResult) ? floodResult : [];
+    const next = buildWeatherWarningAreas(
+      weatherWarningMapRecords,
+      weatherWarningFloodRecords,
+      areaData
+    );
+    weatherWarningState.status = "ready";
+    weatherWarningState.areas = next.areas;
+    weatherWarningState.updatedAt = next.updatedAt || Date.parse(revision) || Date.now();
+    weatherWarningState.revision = revision;
+    weatherWarningState.error = "";
+  } catch (error) {
+    console.warn("気象警報を取得できませんでした。", error);
+    weatherWarningState.status = weatherWarningState.areas.length ? "ready" : "error";
+    weatherWarningState.error = weatherWarningState.areas.length
+      ? "気象警報の更新に失敗しました。前回取得した情報を表示しています。"
+      : "気象警報を取得できませんでした。時間をおいて再度お試しください。";
+  } finally {
+    weatherWarningLoadInProgress = false;
+  }
+
+  if (state.activeTab === "weather-warning") render();
+}
+
+async function loadWeatherWarningBoundaries() {
+  if (weatherWarningFeaturesByCode.size >= 1700) {
+    return weatherWarningFeaturesByCode;
+  }
+  if (weatherWarningBoundaryPromise) return weatherWarningBoundaryPromise;
+
+  weatherWarningBoundaryPromise = (async () => {
+    const results = await Promise.allSettled(
+      Array.from({ length: 10 }, async (_, index) => {
+        const response = await fetch(
+          `${WEATHER_WARNING_GEOJSON_BASE_URL}/class20s_${index}.json`,
+          { cache: "force-cache" }
+        );
+        if (!response.ok) {
+          throw new Error(`気象警報の境界データを取得できません: ${index}`);
+        }
+        return response.json();
+      })
+    );
+
+    let failureCount = 0;
+    results.forEach((result) => {
+      if (result.status !== "fulfilled") {
+        failureCount += 1;
+        console.warn(result.reason);
+        return;
+      }
+      (result.value?.features || []).forEach((feature) => {
+        const code = String(feature?.properties?.code || "");
+        if (code && /^\d{7}$/.test(code)) {
+          weatherWarningFeaturesByCode.set(code, feature);
+        }
+      });
+    });
+
+    if (!weatherWarningFeaturesByCode.size) {
+      throw new Error("気象警報の境界データを読み込めませんでした");
+    }
+    if (failureCount) weatherWarningBoundaryPromise = null;
+    return weatherWarningFeaturesByCode;
+  })().catch((error) => {
+    weatherWarningBoundaryPromise = null;
+    throw error;
+  });
+
+  return weatherWarningBoundaryPromise;
+}
+
+function formatWeatherWarningTime(timestamp) {
+  if (!timestamp) return "更新時刻不明";
+  return new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    hourCycle: "h23"
+  }).format(new Date(timestamp));
+}
+
+function weatherWarningPopupHTML(area) {
+  const level = WEATHER_WARNING_LEVELS[area.severity];
+  return `
+    <strong>${escapeHTML(area.name)}</strong><br>
+    <span style="color:${level.color};font-weight:800">${escapeHTML(level.label)}</span><br>
+    ${area.warnings.map((warning) => escapeHTML(warning.label)).join("<br>")}
+  `;
+}
+
+async function renderWeatherWarningMap() {
+  if (!map || !weatherWarningLayer) return;
+  const renderSequence = weatherWarningRenderSequence;
+  const areas = weatherWarningState.areas;
+
+  if (!weatherWarningViewReady) {
+    map.setView([37.5, 137.5], 5, { animate: false });
+    weatherWarningViewReady = true;
+  }
+  if (!areas.length) return;
+
+  try {
+    await loadWeatherWarningBoundaries();
+    if (
+      renderSequence !== weatherWarningRenderSequence ||
+      state.activeTab !== "weather-warning"
+    ) return;
+
+    const areasByCode = new Map(areas.map((area) => [area.code, area]));
+    const features = areas
+      .map((area) => weatherWarningFeaturesByCode.get(area.code))
+      .filter(Boolean);
+    const missingCount = areas.length - features.length;
+    if (missingCount > 0) {
+      console.warn(`気象警報の地域境界を${missingCount}件表示できませんでした。`);
+    }
+
+    weatherWarningLayer.clearLayers();
+    weatherWarningLeafletLayersByCode.clear();
+    L.geoJSON({ type: "FeatureCollection", features }, {
+      pane: "weatherWarningPane",
+      renderer: weatherWarningRenderer || undefined,
+      style: (feature) => {
+        const area = areasByCode.get(String(feature?.properties?.code || ""));
+        const level = WEATHER_WARNING_LEVELS[area?.severity] ||
+          WEATHER_WARNING_LEVELS.advisory;
+        return {
+          color: "#4e5963",
+          weight: map.getZoom() >= 8 ? 0.9 : 0.45,
+          opacity: 0.9,
+          fillColor: level.color,
+          fillOpacity: 0.7
+        };
+      },
+      onEachFeature: (feature, layer) => {
+        const code = String(feature?.properties?.code || "");
+        const area = areasByCode.get(code);
+        if (!area) return;
+        weatherWarningLeafletLayersByCode.set(code, layer);
+        layer.bindTooltip(
+          `<strong>${escapeHTML(area.name)}</strong><br>${escapeHTML(
+            WEATHER_WARNING_LEVELS[area.severity].label
+          )}`,
+          { sticky: true, className: "weather-warning-tooltip" }
+        );
+        layer.bindPopup(weatherWarningPopupHTML(area), { maxWidth: 300 });
+      }
+    }).addTo(weatherWarningLayer);
+  } catch (error) {
+    console.warn("気象警報の塗り分けを表示できませんでした。", error);
+    if (state.activeTab === "weather-warning") {
+      caption.textContent =
+        "気象警報は取得できましたが、地域境界の読み込みに失敗しました。";
+    }
+  }
+}
+
+function weatherWarningCountHTML(severity, count) {
+  const level = WEATHER_WARNING_LEVELS[severity];
+  return `
+    <div class="weather-warning-count" style="--warning-color:${level.color}">
+      <i aria-hidden="true"></i>
+      <span>${escapeHTML(level.label)}</span>
+      <strong>${count}</strong>
+    </div>`;
+}
+
+function weatherWarningGroupHTML(severity, areas) {
+  if (!areas.length) return "";
+  const level = WEATHER_WARNING_LEVELS[severity];
+  const open = severity !== "advisory" ? " open" : "";
+  return `
+    <details class="weather-warning-group" style="--warning-color:${level.color}"${open}>
+      <summary>
+        <i aria-hidden="true"></i>
+        <span>${escapeHTML(level.label)}</span>
+        <strong>${areas.length}地域</strong>
+      </summary>
+      <div class="weather-warning-area-list">
+        ${areas.map((area) => `
+          <button
+            type="button"
+            class="weather-warning-area-button"
+            data-weather-warning-code="${escapeHTML(area.code)}"
+          >
+            <i aria-hidden="true"></i>
+            <span>
+              <strong>${escapeHTML(area.name)}</strong>
+              <small>${escapeHTML([
+                area.region,
+                area.warnings.map((warning) => warning.label).join("・")
+              ].filter(Boolean).join(" ／ "))}</small>
+            </span>
+          </button>
+        `).join("")}
+      </div>
+    </details>`;
+}
+
+function renderWeatherWarning() {
+  recentSection.hidden = true;
+  const updatedText = formatWeatherWarningTime(weatherWarningState.updatedAt);
+  if (dataSourceBadge) {
+    dataSourceBadge.textContent = weatherWarningState.error
+      ? "気象庁 気象警報・再取得中"
+      : weatherWarningState.status === "ready"
+        ? "気象庁 気象警報"
+        : "気象警報 取得中";
+  }
+
+  legend.innerHTML = ["advisory", "warning", "danger", "special"]
+    .map((severity) => {
+      const level = WEATHER_WARNING_LEVELS[severity];
+      return `<span class="legend-item"><i class="legend-dot" style="background:${level.color};border-radius:2px"></i>${level.label}</span>`;
+    }).join("");
+  caption.textContent = weatherWarningState.error ||
+    `気象庁発表の気象警報・注意報。${updatedText} 更新。地域は最も危険度の高い情報の色で表示しています。`;
+
+  if (weatherWarningState.status === "loading") {
+    panel.innerHTML = `
+      <h1 class="panel-title weather-alert">気象警報・注意報</h1>
+      <div class="weather-warning-empty">気象警報を取得しています…</div>`;
+    renderWeatherWarningMap();
+    return;
+  }
+
+  const groups = Object.fromEntries(
+    Object.keys(WEATHER_WARNING_LEVELS).map((severity) => [
+      severity,
+      weatherWarningState.areas.filter((area) => area.severity === severity)
+    ])
+  );
+  const summary = ["advisory", "warning", "danger", "special"]
+    .map((severity) => weatherWarningCountHTML(severity, groups[severity].length))
+    .join("");
+
+  panel.innerHTML = `
+    <h1 class="panel-title weather-alert">気象警報・注意報</h1>
+    <div class="weather-warning-updated">${escapeHTML(updatedText)} 更新</div>
+    ${weatherWarningState.error
+      ? `<div class="weather-warning-error">${escapeHTML(weatherWarningState.error)}</div>`
+      : ""}
+    <div class="weather-warning-summary">${summary}</div>
+    ${weatherWarningState.areas.length
+      ? `<div class="weather-warning-groups">
+          ${["special", "danger", "warning", "advisory"]
+            .map((severity) => weatherWarningGroupHTML(severity, groups[severity]))
+            .join("")}
+        </div>`
+      : `<div class="weather-warning-empty">現在、気象警報・注意報は発表されていません。</div>`}
+  `;
+  renderWeatherWarningMap();
+}
+
+function focusWeatherWarningArea(code) {
+  if (!map) return;
+  const layer = weatherWarningLeafletLayersByCode.get(String(code || ""));
+  if (!layer) return;
+  const bounds = layer.getBounds?.();
+  if (bounds?.isValid()) {
+    map.fitBounds(bounds.pad(0.35), {
+      maxZoom: 8,
+      padding: [28, 28],
+      animate: false
+    });
+  }
+  layer.openPopup?.();
+}
+
 function updateTabs() {
   document.querySelectorAll("[data-tab]").forEach((button) => {
     const active = button.dataset.tab === state.activeTab;
@@ -4288,6 +4836,8 @@ function render() {
     renderTyphoon();
   } else if (state.activeTab === "volcano") {
     renderVolcano();
+  } else if (state.activeTab === "weather-warning") {
+    renderWeatherWarning();
   } else if (state.earthquakeMode === "normal") {
     renderNormalEarthquake();
   } else if (state.earthquakeMode === "sensing") {
@@ -4345,6 +4895,9 @@ document.querySelectorAll("[data-tab]").forEach((button) => {
       volcanoState.detailMode = false;
       volcanoViewKey = "";
     }
+    if (state.activeTab === "weather-warning") {
+      weatherWarningViewReady = false;
+    }
     render();
   });
 });
@@ -4377,6 +4930,11 @@ recentList.addEventListener("keydown", (event) => {
 });
 
 panel.addEventListener("click", (event) => {
+  const weatherWarningButton = event.target.closest("[data-weather-warning-code]");
+  if (weatherWarningButton) {
+    focusWeatherWarningArea(weatherWarningButton.dataset.weatherWarningCode);
+    return;
+  }
   const volcanoButton = event.target.closest("[data-volcano-code]");
   if (volcanoButton) {
     selectVolcano(volcanoButton.dataset.volcanoCode);
@@ -4541,6 +5099,7 @@ loadLatestP2PQuake();
 loadLatestTsunami();
 loadLatestTyphoons();
 loadLatestVolcanoes();
+loadLatestWeatherWarnings();
 
 setInterval(updateClock, 1000);
 setInterval(updateEEWWaveRadii, 100);
@@ -4548,3 +5107,4 @@ setInterval(expireShakingReports, 1000);
 setInterval(loadLatestTsunami, 60000);
 setInterval(loadLatestTyphoons, 60000);
 setInterval(loadLatestVolcanoes, 60000);
+setInterval(loadLatestWeatherWarnings, 60000);
